@@ -252,10 +252,12 @@ write_csv(lun_summary, "C:\\Users\\jagad\\Desktop\\card_BD\\anomalies_grpng\\lun
 #######################################################################
 
 #read multiple csv files
+library(tidyverse)
+library(plyr)
+library(MASS)
 my_dir<- "C:\\Users\\jagad\\Desktop\\card_BD\\anomalies_grpng"
 myfiles <- list.files(path=my_dir, pattern="*.csv", full.names=TRUE)
 myfiles
-library(plyr)
 #appended all the csv into one file
 #contains all the regions and anomalies that can be filtered by coulumn 
 dat_csv = ldply(myfiles, read_csv)
@@ -269,14 +271,48 @@ dat_fin<- dat_csv %>% left_join(hot_dys, by=c("climREG", "bth_yr"))
 #data formatting
 colfactor<- c("climREG", "bth_yr", "group")
 dat_fin[colfactor]<-lapply(dat_fin[colfactor], factor)
-str(dat_fin)
+#str(dat_fin)
+
+#creating allbirth defects data
+all_def<- dat_fin %>% count(dat_fin$climREG)
+
+unique(dat_fin$group)
+#cardiac cranial Eye Genetic Hepatic Lung Musculoskeletal renal_genURI Skin_sftTis
+unique(dat_fin$climREG)
+#EAST_CENTRAL  CENTRAL NORTHEAST SOUTHEAST SOUTHWEST SOUTH_CENTRAL PANHANDLE NORTH_CENTRAL
+#frq_30C_90F      freq_90pct     freq925pct      freq95pct       freq975pct       freq98pct
 
 #filter by anomaly category and analyze
+x<- dat_fin %>% filter(group=="renal_genURI", climREG=="NORTH CENTRAL")
+
+#model fit
+fit<- glm.nb(n~freq975pct+offset(log(LB)), data = x)
+est <- cbind(Estimate = coef(fit), confint(fit))
+exp(est)
+
+#results
+v<-read_tsv("C:\\Users\\jagad\\Desktop\\card_BD\\results_jul2021.txt", 
+            col_names = c("IRR", "LL", "UL", "group", "region"))
+colfactor<- c("group", "region")
+v[colfactor]<-lapply(v[colfactor], factor)
+
+#plot
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
+                "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+ggplot(v, aes(x = group, y = IRR, ymin = LL, ymax = UL)) + 
+  geom_pointrange(aes(col = factor(region)),position=position_dodge(width=0.8),size = 1)+
+  ylab("IRR [95% CI]") +
+  geom_hline(aes(yintercept = 1)) + 
+  scale_colour_manual(values=cbbPalette) + 
+  ggtitle("Association between hot days (>97.5th pct) and birth defects by climate region")+
+  xlab("")+
+  theme(legend.position = "bottom")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(text=element_text(size=20))+
+  theme(axis.text = element_text(size = 20))
 
 
-
-
-# 
 # #################################################################3
 # #################################################################
 # #OLD CODE
@@ -328,24 +364,3 @@ str(dat_fin)
 #                LL = coef(m1) - 1.96 * std.err,
 #                UL = coef(m1) + 1.96 * std.err)
 # r.est
-# 
-# ################################################################3
-# res<-read.csv("C:\\Users\\jagad\\Desktop\\card_BD\\results.csv",
-#               header=T, fileEncoding="UTF-8-BOM")
-# 
-# 
-# cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", 
-#                 "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-# 
-# ggplot(res, aes(x = region, y = or, ymin = lcl, ymax = ucl)) + 
-#   geom_pointrange(aes(col = factor(Hot_days)), 
-#                   position=position_dodge(width=0.8),size = 1) + 
-#   ylab("Odds ratio [95% CI]") +
-#   geom_hline(aes(yintercept = 1)) + 
-#   scale_colour_manual(values=cbbPalette) + 
-#   ggtitle("Association between frequency of hot days and birth defects by climate region")+
-#   xlab("")+
-#   theme(legend.position = "bottom")+
-#   theme(plot.title = element_text(hjust = 0.5))+
-#   theme(text=element_text(size=20,  family="Arial Black"))+
-#   theme(axis.text = element_text(size = 20, family="Arial Black"))
