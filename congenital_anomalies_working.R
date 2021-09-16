@@ -1,9 +1,9 @@
 library(tidyverse)
 #use zip_climReg_reference.csv file for lat & log for each subject
-dat<- read_csv("C:\\Users\\jagad\\Desktop\\card_BD\\BD_working_dataset.csv")
+dat<- read_csv("/work/jessebell/puvvula/BD_working_dataset.csv")
 dat$zip9<-as.factor(dat$zip9)
 
-zip_climReg<- read_csv("C:\\Users\\jagad\\Desktop\\card_BD\\zip_climReg_reference.csv")
+zip_climReg<- read_csv("/work/jessebell/puvvula/zip_climReg_reference.csv")
 zip_climReg %>% select(ZIP, `Climate region`)
 zip_climReg$climREG<- as.factor(zip_climReg$`Climate region`)
 zip_climReg$zip9<-as.factor(zip_climReg$ZIP)
@@ -239,7 +239,8 @@ unlike<- list(608200,608201,608202,608203,608204,760710,760750,767600,771000,771
 lun<- dat_x %>% select(climREG, bth_yr, bd_dx1:bd_dx29) %>% 
   filter_all(any_vars(. %in% c(lung)))
 #creates count of anomalies by climate region & year (added new variable group)
-lun_summary<- lun %>% count(climREG, bth_yr, sort = TRUE)%>% mutate(group="Lung")
+lun_summary<- lun %>% count(climREG, bth_yr, sort = TRUE)%>% 
+  mutate(group="Lung")
 #saving the count data in csv
 write_csv(lun_summary, "C:\\Users\\jagad\\Desktop\\card_BD\\anomalies_grpng\\lung.csv", 
           na = "NA")
@@ -255,7 +256,7 @@ write_csv(lun_summary, "C:\\Users\\jagad\\Desktop\\card_BD\\anomalies_grpng\\lun
 library(tidyverse)
 library(plyr)
 library(MASS)
-my_dir<- "C:\\Users\\jagad\\Desktop\\card_BD\\anomalies_grpng"
+my_dir<- "/work/jessebell/puvvula/anomalies_grpng"
 myfiles <- list.files(path=my_dir, pattern="*.csv", full.names=TRUE)
 myfiles
 #appended all the csv into one file
@@ -263,7 +264,7 @@ myfiles
 dat_csv = ldply(myfiles, read_csv)
 
 #hot days and live births data per climate region and year
-hot_dys<- read_csv("C:\\Users\\jagad\\Desktop\\card_BD\\hot_day_lb.csv")
+hot_dys<- read_csv("/work/jessebell/puvvula/hot_day_lb.csv")
 
 #left join to add number of hot days and live births per climate region and year
 dat_fin<- dat_csv %>% left_join(hot_dys, by=c("climREG", "bth_yr"))
@@ -283,10 +284,10 @@ unique(dat_fin$climREG)
 #frq_30C_90F      freq_90pct     freq925pct      freq95pct       freq975pct       freq98pct
 
 #filter by anomaly category and analyze
-x<- dat_fin %>% filter(group=="renal_genURI", climREG=="NORTH CENTRAL")
+x<- dat_fin %>% filter(group=="Skin_sftTis")#, climREG=="NORTH CENTRAL")
 
 #model fit
-fit<- glm.nb(n~freq975pct+offset(log(LB)), data = x)
+fit<- glm.nb(n~freq975pct+offset(log(LB)),data = x)
 est <- cbind(Estimate = coef(fit), confint(fit))
 exp(est)
 
